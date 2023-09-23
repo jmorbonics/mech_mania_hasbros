@@ -68,6 +68,9 @@ class HasbroHumanStrategy(Strategy):
             move_distance = 1337  # Distance between the move action's destination and the closest human
             move_choice = moves[0]  # The move action the zombie will be taking
             target_position = Position(49, 58)
+
+
+            # WATER STRAT
             if not game_state.characters[character_id].class_type == CharacterClassType.DEMOLITIONIST:
                 if pos.y >= 58:
                     target_position = Position(24, 77)
@@ -77,24 +80,32 @@ class HasbroHumanStrategy(Strategy):
             if pos.x == 2 and (pos.y <= 77 or pos.y >= 72):
                 target_position = Position(2, 72)
 
+            # SACRIFICE
             if game_state.characters[character_id].class_type == CharacterClassType.DEMOLITIONIST:
-                target_position = Position(0, 50)
+                target_position = Position(42, 48)
 
+            # TRACEUR WALL STRAT
+            if game_state.characters[character_id].class_type == CharacterClassType.TRACEUR:
+                target_position = Position(50, 58)
+                if pos.y >= 58:
+                    target_position = Position(79, 99)
+            for x in range(20):
+                # check if in position
+                if pos.x == 79 + x and pos.y == 99 - x:
+                    # check for nearby zombies
+                    for c in game_state.characters.values():
+                        if not c.is_zombie:
+                            continue  # Fellow humans are frens :D, ignore them
 
-        # attempted
-        #     # Create a 100x100 grid (assuming 0 is open space and 1 is an obstacle)
-        #     grid = [[0 for _ in range(100)] for _ in range(100)]
-        #
-        #     # Define the start and goal coordinates
-        #     start = (pos.x, pos.y)
-        #     goal = (2, 72)
-        #
-        #     path = Node.a_star(grid, start, goal)
-        #     for m in moves:
-        #         if path[5][0] == m.destination.x and path[5][1] == m.destination.y:
-        #             choices.append(m)
-        # return choices
+                        if (c.position.y == 99 - x and c.position.x == 79 + x - 2) or \
+                                (c.position.y == 99 - x - 1 and c.position.x == 79 + x - 1):
+                            target_position = Position(pos.x + 1, pos.y - 1)
+                        elif c.position.y == 99 - x - 2 and c.position.x == 79 + x:
+                            target_position = Position(pos.x + 2, pos.y - 2)
+                        else:
+                            target_position = Position(pos.x, pos.y)
 
+            # Move finder
             for m in moves:
                 distance = abs(m.destination.x - target_position.x) + abs(
                     m.destination.y - target_position.y)  # calculate manhattan distance
@@ -107,6 +118,11 @@ class HasbroHumanStrategy(Strategy):
             choices.append(move_choice)  # add the choice to the list
 
         return choices
+
+
+
+
+
 
 
 
@@ -154,6 +170,8 @@ class HasbroHumanStrategy(Strategy):
 
             if closest_zombie:  # Attack the closest zombie, if there is one
                 choices.append(closest_zombie)
+            else:
+                choices.append(attacks[0])
 
         return choices
 
