@@ -3,6 +3,7 @@
 # If there are no humans in attacking range but there are obstacles, attack a random obstacle.
 
 import random
+import math
 from game.character.action.ability_action import AbilityAction
 from game.character.action.attack_action import AttackAction
 from game.character.action.move_action import MoveAction
@@ -11,7 +12,73 @@ from game.character.action.attack_action_type import AttackActionType
 from strategy.strategy import Strategy
 
 
+def f(x):
+    fnctn = {0: 64,
+             1: 64,
+             2: 64,
+             3: 65,
+             4: 65,
+             5: 66,
+             6: 66,
+             7: 67,
+             8: 67,
+             9: 68,
+             10: 68,
+             11: 69,
+             12: 69,
+             13: 70,
+             14: 70,
+             15: 71,
+             16: 72,
+             17: 72,
+             18: 73,
+             19: 73,
+             20: 74,
+             21: 75,
+             22: 75,
+             23: 76,
+             24: 76,
+             25: 77,
+             26: 78,
+             27: 79,
+             28: 80,
+             29: 80,
+             30: 81,
+             31: 82,
+             32: 83,
+             33: 84,
+             34: 85,
+             35: 85,
+             36: 86,
+             37: 87,
+             38: 88,
+             39: 89,
+             40: 91,
+             41: 91,
+             42: 93,
+             43: 94,
+             44: 96,
+             45: 97,
+             46: 98,
+             47: 99,
+             48: 100,
+             49: 101}
+
+    if (x in fnctn):
+        return fnctn[x]
+    else:
+        return 200
+
+        # if (x <= 24):
+        #     return math.ceil(.5*x + 62)
+        # elif (x >= 25 and x <= 33):
+        #     return x + 52
+        # else:
+        #     return x + 49
+
+
 class HasbroZombieStrategy(Strategy):
+
     def decide_moves(
             self,
             possible_moves: dict[str, list[MoveAction]],
@@ -19,6 +86,24 @@ class HasbroZombieStrategy(Strategy):
     ) -> list[MoveAction]:
 
         choices = []
+
+        num_zombies = 0
+        num_humans = 0
+
+        for c in game_state.characters.values():
+            if c.is_zombie:
+                num_zombies += 1
+            else:
+                num_humans += 1
+
+        taken_humans: dict[str, int] = {}
+
+        # taken_humans[game_state.characters.keys()[0]] = 7
+        for [ids, chars] in game_state.characters.items():
+            if (not chars.is_zombie):
+                taken_humans[ids] = 0
+
+        max_zombies_on_target = math.ceil(float(num_zombies) / float(num_humans))
 
         for [character_id, moves] in possible_moves.items():
             if len(moves) == 0:  # No choices... Next!
@@ -28,16 +113,34 @@ class HasbroZombieStrategy(Strategy):
             closest_human_pos = pos  # default position is zombie's pos
             closest_human_distance = 1984  # large number, map isn't big enough to reach this distance
 
+            zombie_target_id = ""
             # Iterate through every human to find the closest one
-            for c in game_state.characters.values():
+            for [i, c] in game_state.characters.items():
                 if c.is_zombie:
                     continue  # Fellow zombies are frens :D, ignore them
 
                 distance = abs(c.position.x - pos.x) + abs(
                     c.position.y - pos.y)  # calculate manhattan distance between human and zombie
-                if distance < closest_human_distance:  # If distance is closer than current closest, replace it!
+                if distance < closest_human_distance and (taken_humans[
+                                                              i] < max_zombies_on_target):  # If distance is closer than current closest, replace it!
                     closest_human_pos = c.position
                     closest_human_distance = distance
+
+                    taken_humans[i] += 1
+                    if (zombie_target_id in taken_humans and taken_humans[zombie_target_id] > 0):
+                        taken_humans[zombie_target_id] -= 1
+                    zombie_target_id = i
+
+            # find radius from specific center point. Attraction only works outside the radius.
+            # (26, 78) is the center of the opening
+            dist_from_water_opening = abs(26 - pos.x) + abs(78 - pos.y)
+
+            if ((f(pos.x) > pos.y and f(closest_human_pos.x) < closest_human_pos.y) or (
+                    f(pos.x) < pos.y and f(closest_human_pos.x) > closest_human_pos.y)):
+                if (dist_from_water_opening > 2):
+                    closest_human_pos.x = 26
+                    closest_human_pos.y = 78
+                    closest_human_distance = dist_from_water_opening
 
             # Move as close to the human as possible
             move_distance = 1337  # Distance between the move action's destination and the closest human
@@ -80,70 +183,3 @@ class HasbroZombieStrategy(Strategy):
                 choices.append(random.choice(attacks))
 
         return choices
-
-
-    # def heuristic(node, goal):
-    #     # Calculate the Manhattan distance between the current node and the goal node
-    #     return abs(node.x - goal.x) + abs(node.y - goal.y)
-    #
-    # def a_star(grid, start, goal):
-    #     open_set = []
-    #     closed_set = set()
-    #
-    #     start_node = Node(*start)
-    #     goal_node = Node(*goal)
-    #
-    #     start_node.g = 0
-    #     start_node.h = heuristic(start_node, goal_node)
-    #
-    #     heapq.heappush(open_set, start_node)
-    #
-    #     while open_set:
-    #         current_node = heapq.heappop(open_set)
-    #
-    #         if current_node.x == goal_node.x and current_node.y == goal_node.y:
-    #             path = []
-    #             while current_node:
-    #                 path.append((current_node.x, current_node.y))
-    #                 current_node = current_node.parent
-    #             return path[::-1]
-    #
-    #         closed_set.add((current_node.x, current_node.y))
-    #
-    #         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-    #             neighbor_x, neighbor_y = current_node.x + dx, current_node.y + dy
-    #             if (
-    #                 0 <= neighbor_x < len(grid) and
-    #                 0 <= neighbor_y < len(grid[0]) and
-    #                 grid[neighbor_x][neighbor_y] != 1 and
-    #                 (neighbor_x, neighbor_y) not in closed_set
-    #             ):
-    #                 neighbor_node = Node(neighbor_x, neighbor_y)
-    #                 tentative_g = current_node.g + 1  # Assuming a uniform cost of 1 for each step
-    #
-    #                 if tentative_g < neighbor_node.g:
-    #                     neighbor_node.parent = current_node
-    #                     neighbor_node.g = tentative_g
-    #                     neighbor_node.h = heuristic(neighbor_node, goal_node)
-    #
-    #                     if neighbor_node not in open_set:
-    #                         heapq.heappush(open_set, neighbor_node)
-    #
-    #     return None  # No path found
-    #
-    # # Create a 100x100 grid (assuming 0 is open space and 1 is an obstacle)
-    # grid = [[0 for _ in range(100)] for _ in range(100)]
-    #
-    # # Define the start and goal coordinates
-    # start = (0, 0)
-    # goal = (99, 99)
-    #
-    # # Find the path using A* algorithm
-    # path = a_star(grid, start, goal)
-    #
-    # if path:
-    #     print("Path found:")
-    #     for step, (x, y) in enumerate(path):
-    #         print(f"Step {step}: ({x}, {y})")
-    # else:
-    #     print("No path found.")

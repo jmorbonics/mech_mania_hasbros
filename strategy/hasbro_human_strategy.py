@@ -29,10 +29,11 @@ class HasbroHumanStrategy(Strategy):
         # Selecting 6 Marksmen, 6 Medics, and 4 Traceurs
         # The other 4 humans will be regular class
         choices = {
-            CharacterClassType.MARKSMAN: 5,
-            CharacterClassType.MEDIC: 5,
+            CharacterClassType.MARKSMAN: 1,
+            CharacterClassType.MEDIC: 1,
+            CharacterClassType.BUILDER: 4,
             CharacterClassType.TRACEUR: 5,
-            CharacterClassType.DEMOLITIONIST: 1,
+            CharacterClassType.DEMOLITIONIST: 5,
         }
         return choices
 
@@ -70,40 +71,111 @@ class HasbroHumanStrategy(Strategy):
             target_position = Position(49, 58)
 
 
-            # WATER STRAT
-            if not game_state.characters[character_id].class_type == CharacterClassType.DEMOLITIONIST:
+            # WATER STRAT (TRACEUR)
+            if game_state.characters[character_id].class_type == CharacterClassType.TRACEUR:
                 if pos.y >= 58:
                     target_position = Position(24, 77)
-                    if pos.x <= 24 and pos.y >= 77:
-                        target_position = Position(2, 77)
+                    if pos.x == 24 and pos.y == 77:
+                        target_position = Position(20, 77)
+                if pos.x <= 21:
+                    target_position = Position(2, 74)
 
-            if pos.x == 2 and (pos.y <= 77 or pos.y >= 72):
-                target_position = Position(2, 72)
-
-            # SACRIFICE
-            if game_state.characters[character_id].class_type == CharacterClassType.DEMOLITIONIST:
-                target_position = Position(42, 48)
-
-            # TRACEUR WALL STRAT
-            if game_state.characters[character_id].class_type == CharacterClassType.TRACEUR:
-                target_position = Position(50, 58)
-                if pos.y >= 58:
-                    target_position = Position(79, 99)
-            for x in range(20):
-                # check if in position
-                if pos.x == 79 + x and pos.y == 99 - x:
-                    # check for nearby zombies
+                if game_state.turn >= 50:
                     for c in game_state.characters.values():
                         if not c.is_zombie:
                             continue  # Fellow humans are frens :D, ignore them
+                        zom_pos = c.position
+                        if zom_pos.x <= 15 and zom_pos.y >= 76:
+                            target_position = Position(5, 98)
 
-                        if (c.position.y == 99 - x and c.position.x == 79 + x - 2) or \
-                                (c.position.y == 99 - x - 1 and c.position.x == 79 + x - 1):
-                            target_position = Position(pos.x + 1, pos.y - 1)
-                        elif c.position.y == 99 - x - 2 and c.position.x == 79 + x:
-                            target_position = Position(pos.x + 2, pos.y - 2)
-                        else:
-                            target_position = Position(pos.x, pos.y)
+                if pos.y >= 98:
+                    target_position = Position(20, 98)
+
+                if game_state.turn >= 75 and pos.x >= 20:
+                    target_position = Position(26, 78)
+
+                if game_state.turn >= 75 and (pos.y <= 78 or pos.x >= 26):
+                    # Move as far away from the zombie as possible
+                    move_distance = -1  # Distance between the move action's destination and the closest zombie
+                    move_choice = moves[0]  # The move action the human will be taking
+
+                    for m in moves:
+                        distance = abs(m.destination.x - closest_zombie_pos.x) + abs(
+                            m.destination.y - closest_zombie_pos.y)  # calculate manhattan distance
+
+                        if distance > move_distance:  # If distance is further, that's our new choice!
+                            move_distance = distance
+                            move_choice = m
+
+                    target_position = move_choice.destination
+
+            # WATER STRAT (BUILDER/MARKSMEN/NORMAL)
+            if game_state.characters[character_id].class_type == CharacterClassType.BUILDER or \
+                    game_state.characters[character_id].class_type == CharacterClassType.MARKSMAN or \
+                    game_state.characters[character_id].class_type == CharacterClassType.MEDIC or \
+                    game_state.characters[character_id].class_type == CharacterClassType.NORMAL:
+                if pos.y >= 58:
+                    target_position = Position(24, 77)
+                    if pos.y >= 77:
+                        target_position = Position(19, 98)
+                        if pos.x <= 19 and pos.y == 98:
+                            target_position = Position(9, 98)
+                if pos == Position(9, 98):
+                    target_position = Position(11, 99)
+                if pos == Position(11, 99):
+                    target_position = Position(14, 99)
+                if game_state.turn >= 70:
+                    target_position = Position(14, 99)
+
+                if game_state.turn >= 70:
+                    for c in game_state.characters.values():
+                        if not c.is_zombie:
+                            continue  # Fellow humans are frens :D, ignore them
+                        zom_pos = c.position
+                        if zom_pos.x <= 15 and zom_pos.y >= 76:
+                            target_position = Position(26, 78)
+
+                if game_state.turn >= 75 and (pos.y <= 78 or pos.x >= 26):
+                    # Move as far away from the zombie as possible
+                    move_distance = -1  # Distance between the move action's destination and the closest zombie
+                    move_choice = moves[0]  # The move action the human will be taking
+
+                    for m in moves:
+                        distance = abs(m.destination.x - closest_zombie_pos.x) + abs(
+                            m.destination.y - closest_zombie_pos.y)  # calculate manhattan distance
+
+                        if distance > move_distance:  # If distance is further, that's our new choice!
+                            move_distance = distance
+                            move_choice = m
+
+                    target_position = move_choice.destination
+
+
+
+            # SACRIFICE
+            if game_state.characters[character_id].class_type == CharacterClassType.DEMOLITIONIST:
+                target_position = Position(0, 48)
+
+            # TRACEUR WALL STRAT
+            # if game_state.characters[character_id].class_type == CharacterClassType.TRACEUR:
+            #     target_position = Position(50, 58)
+            #     if pos.y >= 58:
+            #         target_position = Position(79, 99)
+            # for x in range(20):
+            #     # check if in position
+            #     if pos.x == 79 + x and pos.y == 99 - x:
+            #         # check for nearby zombies
+            #         for c in game_state.characters.values():
+            #             if not c.is_zombie:
+            #                 continue  # Fellow humans are frens :D, ignore them
+            #
+            #             if (c.position.y == 99 - x and c.position.x == 79 + x - 2) or \
+            #                     (c.position.y == 99 - x - 1 and c.position.x == 79 + x - 1):
+            #                 target_position = Position(pos.x + 1, pos.y - 1)
+            #             elif c.position.y == 99 - x - 2 and c.position.x == 79 + x:
+            #                 target_position = Position(pos.x + 2, pos.y - 2)
+            #             else:
+            #                 target_position = Position(pos.x, pos.y)
 
             # Move finder
             for m in moves:
@@ -118,12 +190,6 @@ class HasbroHumanStrategy(Strategy):
             choices.append(move_choice)  # add the choice to the list
 
         return choices
-
-
-
-
-
-
 
 
         #     # Move as far away from the zombie as possible
@@ -170,8 +236,18 @@ class HasbroHumanStrategy(Strategy):
 
             if closest_zombie:  # Attack the closest zombie, if there is one
                 choices.append(closest_zombie)
-            else:
-                choices.append(attacks[0])
+
+            wallmove = None
+            # breaking walls
+            if not closest_zombie:
+                for a in attacks:
+                    if a.type is AttackActionType.TERRAIN:
+                        if not (game_state.terrains[a.attacking_id].position.x <= 20 and \
+                                game_state.terrains[a.attacking_id].position.y >= 85):
+                            wallmove = a
+
+                if wallmove:
+                    choices.append(wallmove)
 
         return choices
 
@@ -186,82 +262,27 @@ class HasbroHumanStrategy(Strategy):
             if len(abilities) == 0:  # No choices? Next!
                 continue
 
-            # Since we only have medics, the choices must only be healing a nearby human
-            human_target = abilities[0]  # the human that'll be healed
-            least_health = 999  # The health of the human being targeted
-
+            # BUILDING
             for a in abilities:
-                health = game_state.characters[a.character_id_target].health  # Health of human in question
+                if a.type == AbilityActionType.BUILD_BARRICADE:
+                    self_pos = game_state.characters[a.executing_character_id].position
+                    if a.positional_target == Position(8, 98) or a.positional_target == Position(8, 99):
+                        choices.append(a)
+                    elif self_pos == Position(11, 99):
+                        if a.positional_target == Position(10, 98) or a.positional_target == Position(10, 99):
+                            choices.append(a)
 
-                if health < least_health:  # If they have less health, they are the new patient!
-                    human_target = a
-                    least_health = health
-
-            if human_target:  # Give the human a cookie
-                choices.append(human_target)
+            # # HEALING
+            least_health = 999  # The health of the human being targeted
+            for a in abilities:
+                if a.type == AbilityActionType.HEAL:
+                    human_target = abilities[0]  # the human that'll be healed
+                    health = game_state.characters[a.character_id_target].health  # Health of human in question
+                    if health < least_health:  # If they have less health, they are the new patient!
+                        human_target = a
+                        least_health = health
+                    if human_target:  # Give the human a cookie
+                        choices.append(human_target)
 
         return choices
 
-
-
-class Node:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.g = float('inf')  # Cost from start node to this node
-        self.h = 0             # Heuristic (estimated cost from this node to goal)
-        self.parent = None
-
-    def __lt__(self, other):
-        return (self.g + self.h) < (other.g + other.h)
-
-    @staticmethod
-    def heuristic(node, goal):
-        # Calculate the Manhattan distance between the current node and the goal node
-        return abs(node.x - goal.x) + abs(node.y - goal.y)
-
-    @staticmethod
-    def a_star(grid, start, goal):
-        open_set = []
-        closed_set = set()
-
-        start_node = Node(*start)
-        goal_node = Node(*goal)
-
-        start_node.g = 0
-        start_node.h = Node.heuristic(start_node, goal_node)
-
-        heapq.heappush(open_set, start_node)
-
-        while open_set:
-            current_node = heapq.heappop(open_set)
-
-            if current_node.x == goal_node.x and current_node.y == goal_node.y:
-                path = []
-                while current_node:
-                    path.append((current_node.x, current_node.y))
-                    current_node = current_node.parent
-                return path[::-1]
-
-            closed_set.add((current_node.x, current_node.y))
-
-            for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-                neighbor_x, neighbor_y = current_node.x + dx, current_node.y + dy
-                if (
-                    0 <= neighbor_x < len(grid) and
-                    0 <= neighbor_y < len(grid[0]) and
-                    grid[neighbor_x][neighbor_y] != 1 and
-                    (neighbor_x, neighbor_y) not in closed_set
-                ):
-                    neighbor_node = Node(neighbor_x, neighbor_y)
-                    tentative_g = current_node.g + 1  # Assuming a uniform cost of 1 for each step
-
-                    if tentative_g < neighbor_node.g:
-                        neighbor_node.parent = current_node
-                        neighbor_node.g = tentative_g
-                        # neighbor_node.h = heuristic(neighbor_node, goal_node)
-
-                        if neighbor_node not in open_set:
-                            heapq.heappush(open_set, neighbor_node)
-
-        return None  # No path found

@@ -27,8 +27,8 @@ class SimpleHumanStrategy(Strategy):
         # Selecting 6 Marksmen, 6 Medics, and 4 Traceurs
         # The other 4 humans will be regular class
         choices = {
-            CharacterClassType.MARKSMAN: 5,
             CharacterClassType.MEDIC: 5,
+            CharacterClassType.MARKSMAN: 5,
             CharacterClassType.TRACEUR: 4,
             CharacterClassType.DEMOLITIONIST: 2,
         }
@@ -104,6 +104,8 @@ class SimpleHumanStrategy(Strategy):
 
             if closest_zombie:  # Attack the closest zombie, if there is one
                 choices.append(closest_zombie)
+            else:
+                choices.append(attacks[0])
 
         return choices
 

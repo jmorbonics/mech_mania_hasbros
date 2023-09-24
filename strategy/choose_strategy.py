@@ -12,7 +12,7 @@ def choose_strategy(is_zombie: bool) -> Strategy:
     #
     # For example:
     if is_zombie:
-        return SimpleZombieStrategy()
+        return HasbroZombieStrategy()
     else:
         return HasbroHumanStrategy()
 
